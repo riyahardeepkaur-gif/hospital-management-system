@@ -1,0 +1,144 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import oracledb
+
+# ---------- DB ----------
+conn = oracledb.connect(user="system", password="pass", dsn="localhost/xe")
+cur = conn.cursor()
+
+# ---------- MAIN WINDOW ----------
+root = tk.Tk()
+root.title("Hospital Management System")
+root.geometry("900x550")
+root.configure(bg="#f4f6f7")
+
+# ---------- SIDEBAR ----------
+sidebar = tk.Frame(root, bg="#2c3e50", width=200)
+sidebar.pack(side="left", fill="y")
+
+main = tk.Frame(root, bg="#f4f6f7")
+main.pack(side="right", fill="both", expand=True)
+
+tk.Label(sidebar, text="Hospital",
+         bg="#2c3e50", fg="white",
+         font=("Arial", 16, "bold")).pack(pady=20)
+
+# ---------- FUNCTIONS ----------
+def open_form(title, fields, save_func):
+    win = tk.Toplevel(root)
+    win.title(title)
+
+    entries = []
+    for f in fields:
+        tk.Label(win, text=f).pack()
+        e = tk.Entry(win)
+        e.pack()
+        entries.append(e)
+
+    def save():
+        save_func([e.get() for e in entries])
+        win.destroy()
+
+    tk.Button(win, text="Save", bg="#27ae60", fg="white",
+              command=save).pack(pady=10)
+
+# ---------- DATABASE ACTIONS ----------
+def add_patient():
+    open_form("Add Patient", ["Name", "Age", "Gender"],
+        lambda v: insert_patient(v))
+
+def insert_patient(v):
+    cur.execute("INSERT INTO PATIENT VALUES(seq_patient.NEXTVAL,:1,:2,:3)", v)
+    conn.commit()
+    messagebox.showinfo("Success", "Patient Added")
+
+def add_doctor():
+    open_form("Add Doctor", ["Name", "Specialization"],
+        lambda v: insert_doctor(v))
+
+def insert_doctor(v):
+    cur.execute("INSERT INTO DOCTOR VALUES(seq_doctor.NEXTVAL,:1,:2)", v)
+    conn.commit()
+    messagebox.showinfo("Success", "Doctor Added")
+
+def add_room():
+    open_form("Add Room", ["Type", "Status"],
+        lambda v: insert_room(v))
+
+def insert_room(v):
+    cur.execute("INSERT INTO ROOM VALUES(seq_room.NEXTVAL,:1,:2)", v)
+    conn.commit()
+    messagebox.showinfo("Success", "Room Added")
+
+def book_app():
+    open_form("Book Appointment", ["Patient ID", "Doctor ID"],
+        lambda v: insert_app(v))
+
+def insert_app(v):
+    cur.execute("INSERT INTO APPOINTMENT VALUES(seq_app.NEXTVAL,:1,:2,SYSDATE)", v)
+    conn.commit()
+    messagebox.showinfo("Success", "Appointment Booked")
+
+def bill():
+    open_form("Generate Bill", ["Patient ID", "Amount"],
+        lambda v: insert_bill(v))
+
+def insert_bill(v):
+    cur.execute("INSERT INTO BILL VALUES(seq_bill.NEXTVAL,:1,:2)", v)
+    conn.commit()
+    messagebox.showinfo("Success", "Bill Generated")
+
+# ---------- VIEW TABLE ----------
+def view(table):
+    win = tk.Toplevel(root)
+    win.title(table)
+
+    frame = tk.Frame(win)
+    frame.pack(fill="both", expand=True)
+
+    tree = ttk.Treeview(frame)
+    tree.pack(side="left", fill="both", expand=True)
+
+    scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+    scroll.pack(side="right", fill="y")
+    tree.configure(yscrollcommand=scroll.set)
+
+    cur.execute(f"SELECT * FROM {table}")
+    cols = [d[0] for d in cur.description]
+
+    tree["columns"] = cols
+    tree["show"] = "headings"
+
+    for c in cols:
+        tree.heading(c, text=c)
+
+    for row in cur.fetchall():
+        tree.insert("", "end", values=row)
+
+# ---------- SIDEBAR BUTTONS ----------
+btn_style = {"bg":"#34495e","fg":"white","width":20}
+
+tk.Button(sidebar, text="Add Patient", command=add_patient, **btn_style).pack(pady=5)
+tk.Button(sidebar, text="Add Doctor", command=add_doctor, **btn_style).pack(pady=5)
+tk.Button(sidebar, text="Add Room", command=add_room, **btn_style).pack(pady=5)
+tk.Button(sidebar, text="Appointment", command=book_app, **btn_style).pack(pady=5)
+tk.Button(sidebar, text="Generate Bill", command=bill, **btn_style).pack(pady=5)
+
+tk.Label(sidebar, text="View Data",
+         bg="#2c3e50", fg="white").pack(pady=10)
+
+tk.Button(sidebar, text="Patients", command=lambda: view("PATIENT"), **btn_style).pack(pady=3)
+tk.Button(sidebar, text="Doctors", command=lambda: view("DOCTOR"), **btn_style).pack(pady=3)
+tk.Button(sidebar, text="Rooms", command=lambda: view("ROOM"), **btn_style).pack(pady=3)
+tk.Button(sidebar, text="Appointments", command=lambda: view("APPOINTMENT"), **btn_style).pack(pady=3)
+tk.Button(sidebar, text="Bills", command=lambda: view("BILL"), **btn_style).pack(pady=3)
+
+# ---------- MAIN AREA ----------
+tk.Label(main, text="Dashboard",
+         font=("Arial", 20, "bold"),
+         bg="#f4f6f7").pack(pady=20)
+
+tk.Label(main, text="Use the left menu to manage hospital data",
+         bg="#f4f6f7", font=("Arial", 12)).pack()
+
+root.mainloop()

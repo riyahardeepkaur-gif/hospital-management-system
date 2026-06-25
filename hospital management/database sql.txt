@@ -1,0 +1,54 @@
+CREATE TABLE PATIENT(
+    patient_id NUMBER PRIMARY KEY,
+    name VARCHAR2(50),
+    age NUMBER,
+    gender VARCHAR2(10)
+);
+
+CREATE TABLE DOCTOR(
+    doctor_id NUMBER PRIMARY KEY,
+    name VARCHAR2(50),
+    specialization VARCHAR2(50)
+);
+
+CREATE TABLE ROOM(
+    room_id NUMBER PRIMARY KEY,
+    type VARCHAR2(20),
+    status VARCHAR2(20)
+);
+
+CREATE TABLE APPOINTMENT(
+    appointment_id NUMBER PRIMARY KEY,
+    patient_id NUMBER,
+    doctor_id NUMBER,
+    app_date DATE
+);
+
+CREATE TABLE BILL(
+    bill_id NUMBER PRIMARY KEY,
+    patient_id NUMBER,
+    amount NUMBER
+);
+
+CREATE SEQUENCE seq_doctor START WITH 1;
+CREATE SEQUENCE seq_patient START WITH 1;
+CREATE SEQUENCE seq_room START WITH 1;
+CREATE SEQUENCE seq_app START WITH 1;
+CREATE SEQUENCE seq_bill START WITH 1;
+
+
+
+ALTER TABLE APPOINTMENT
+ADD CONSTRAINT fk_patient
+FOREIGN KEY(patient_id)
+REFERENCES PATIENT(patient_id);
+
+ALTER TABLE APPOINTMENT
+ADD CONSTRAINT fk_doctor
+FOREIGN KEY(doctor_id)
+REFERENCES DOCTOR(doctor_id);
+
+ALTER TABLE BILL
+ADD CONSTRAINT fk_bill_patient
+FOREIGN KEY(patient_id)
+REFERENCES PATIENT(patient_id);
